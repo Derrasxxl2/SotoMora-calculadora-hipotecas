@@ -387,6 +387,16 @@
     <div class="slider-ticks"><span>1%</span><span>7%</span></div>
   </div>
 
+  <div class="slider-field">
+    <div class="slider-header">
+      <label>¿Cuánto quieres pagar al mes?</label>
+      <span class="slider-val" id="cuota-deseada-out">875 €/mes</span>
+    </div>
+    <input type="range" id="cuota-deseada" min="100" max="3000" value="875" step="25"
+      oninput="calcular()">
+    <div class="slider-ticks"><span>100 €</span><span>3.000 €</span></div>
+  </div>
+
   <div class="divider"></div>
 
   <div class="results">
@@ -433,67 +443,119 @@ function calcular() {
   var ahorros = parseFloat(document.getElementById('ahorros').value) || 0;
   var plazo = parseInt(document.getElementById('plazo').value);
   var tin = parseFloat(document.getElementById('interes').value) / 100;
+  var cuotaDeseada = parseFloat(document.getElementById('cuota-deseada').value) || 0;
 
-  var maxCuota = salario * 0.35;
   var n = plazo * 12;
   var r = tin / 12;
 
-  var hipotecaMaxPorCuota;
+  // Límites del banco
+  var cuotaMaxBanco = salario * 0.35;
+  var hipotecaMaxPorSalario = salario * 12 * 8;
+
+  // Hipoteca que permite la cuota deseada
+  var hipotecaPorCuota;
   if (r === 0) {
-    hipotecaMaxPorCuota = maxCuota * n;
+    hipotecaPorCuota = cuotaDeseada * n;
   } else {
-    hipotecaMaxPorCuota = maxCuota * (1 - Math.pow(1 + r, -n)) / r;
+    hipotecaPorCuota = cuotaDeseada * (1 - Math.pow(1 + r, -n)) / r;
   }
 
-  var hipotecaMaxPorBanco = salario * 12 * 8;
-  var hipoteca = Math.min(hipotecaMaxPorCuota, hipotecaMaxPorBanco);
+  // La hipoteca real es el mínimo entre lo que permite la cuota deseada y el límite del banco
+  var hipoteca = Math.min(hipotecaPorCuota, hipotecaMaxPorSalario);
+
+  // Si la cuota deseada supera el límite del banco, recalcular con la cuota máxima
+  var cuotaMaxPorCuota;
+  if (r === 0) {
+    cuotaMaxPorCuota = cuotaMaxBanco * n;
+  } else {
+    cuotaMaxPorCuota = cuotaMaxBanco * (1 - Math.pow(1 + r, -n)) / r;
+  }
+  hipoteca = Math.min(hipoteca, cuotaMaxPorCuota);
+
+  // Cuota real resultante
+  var cuotaReal;
+  if (r === 0) {
+    cuotaReal = hipoteca / n;
+  } else {
+    cuotaReal = hipoteca * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+  }
 
   var ahorrosUtiles = ahorros * 0.8;
   var precioMax = hipoteca + ahorrosUtiles;
+  var pct = salario > 0 ? (cuotaReal / salario * 100) : 0;
 
-  var cuota;
-  if (r === 0) {
-    cuota = hipoteca / n;
-  } else {
-    cuota = hipoteca * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
-  }
-
+  // Actualizar slider label
+  document.getElementById('cuota-deseada-out').textContent = Math.round(cuotaDeseada).toLocaleString('es-ES') + ' €/mes';
   document.getElementById('precio-max').textContent = fmt(precioMax);
   document.getElementById('hipoteca').textContent = fmt(hipoteca);
-  document.getElementById('cuota').textContent = Math.round(cuota).toLocaleString('es-ES') + ' €/mes';
-
-  var pct = salario > 0 ? (cuota / salario * 100) : 0;
+  document.getElementById('cuota').textContent = Math.round(cuotaReal).toLocaleString('es-ES') + ' €/mes';
   document.getElementById('pct-label').textContent = Math.round(pct) + '%';
 
   var barra = document.getElementById('barra');
   barra.style.width = Math.min(pct, 100) + '%';
 
   var semaforo = document.getElementById('semaforo');
-  if (pct <= 30) {
+  var cuotaRealFmt = Math.round(cuotaReal).toLocaleString('es-ES');
+  var cuotaMaxFmt = Math.round(cuotaMaxBanco).toLocaleString('es-ES');
+  var pctFmt = Math.round(pct);
+  var limitadoPorBanco = cuotaDeseada > cuotaMaxBanco;
+  var limitadoPorSalario8x = hipotecaPorCuota > hipotecaMaxPorSalario && !limitadoPorBanco;
+
+  if (limitadoPorBanco) {
+    barra.style.background = '#C23030';
+    semaforo.className = 'semaforo danger';
+    semaforo.innerHTML = '✗ <strong>El banco no te concederá esa cuota.</strong> Con ' + salario.toLocaleString('es-ES') + ' €/mes de salario, el máximo que aprobará es ' + cuotaMaxFmt + ' €/mes (35% del salario). El cálculo se ha ajustado a ese límite.';
+  } else if (limitadoPorSalario8x) {
+    barra.style.background = '#D4820A';
+    semaforo.className = 'semaforo warning';
+    semaforo.innerHTML = '⚠ <strong>Límite por endeudamiento total.</strong> Los bancos no suelen prestar más de 8 veces el salario anual (' + fmt(hipotecaMaxPorSalario) + '). La hipoteca se ha ajustado a ese máximo aunque tu cuota lo permitiría.';
+  } else if (pct <= 25) {
     barra.style.background = '#74B820';
     semaforo.className = 'semaforo ok';
-    semaforo.textContent = '✓ Esfuerzo cómodo. Tu hipoteca encaja bien con tu salario.';
+    semaforo.innerHTML = '✓ <strong>Muy cómodo.</strong> Pagarás ' + cuotaRealFmt + ' €/mes, solo el ' + pctFmt + '% de tu salario. Tienes margen para imprevistos y ahorro.';
+  } else if (pct <= 33) {
+    barra.style.background = '#74B820';
+    semaforo.className = 'semaforo ok';
+    semaforo.innerHTML = '✓ <strong>Esfuerzo razonable.</strong> ' + cuotaRealFmt + ' €/mes representa el ' + pctFmt + '% de tu salario. Es asumible, pero intenta tener 3-6 meses de cuota ahorrados como colchón.';
   } else if (pct <= 40) {
     barra.style.background = '#D4820A';
     semaforo.className = 'semaforo warning';
-    semaforo.textContent = '⚠ Esfuerzo moderado. Asegúrate de tener un colchón de emergencia.';
+    semaforo.innerHTML = '⚠ <strong>Al límite.</strong> ' + cuotaRealFmt + ' €/mes es el ' + pctFmt + '% de tu salario. El banco puede aprobarlo, pero no tendrás mucho margen. Considera aumentar el plazo o los ahorros para bajar la cuota.';
   } else {
     barra.style.background = '#C23030';
     semaforo.className = 'semaforo danger';
-    semaforo.textContent = '✗ Esfuerzo alto. Los bancos suelen rechazar hipotecas por encima del 40% del salario.';
+    semaforo.innerHTML = '✗ <strong>Esfuerzo muy alto (' + pctFmt + '%).</strong> Con ' + cuotaRealFmt + ' €/mes dedicas más del 40% de tu salario a la hipoteca. La mayoría de bancos rechazarán la operación. Reduce la cuota o aumenta los ahorros.';
   }
 
   var gastosCompra = precioMax * 0.10;
   var ahorrosNecesarios = precioMax * 0.20 + gastosCompra;
+  var tesFaltanAhorros = ahorrosNecesarios > ahorros;
 
   document.getElementById('desglose').innerHTML =
-    '<div class="desglose-row"><span>Entrada mínima (20%)</span><strong>' + fmt(precioMax * 0.20) + '</strong></div>' +
-    '<div class="desglose-row"><span>Gastos de compra (~10%)</span><strong>' + fmt(gastosCompra) + '</strong></div>' +
-    '<div class="desglose-row"><span>Ahorros necesarios estimados</span><strong>' + fmt(ahorrosNecesarios) + '</strong></div>' +
-    '<div class="desglose-row"><span>Cuota máxima recomendada</span><strong>' + fmt(maxCuota) + '/mes</strong></div>';
+    '<div class="desglose-row"><span>Entrada mínima (20% del precio)</span><strong>' + fmt(precioMax * 0.20) + '</strong></div>' +
+    '<div class="desglose-row"><span>Gastos de compra estimados (~10%)</span><strong>' + fmt(gastosCompra) + '</strong></div>' +
+    '<div class="desglose-row"><span>Total ahorros necesarios</span><strong>' + fmt(ahorrosNecesarios) + '</strong></div>' +
+    '<div class="desglose-row"><span>Tus ahorros actuales</span><strong style="color:' + (tesFaltanAhorros ? '#C23030' : '#467421') + '">' + fmt(ahorros) + (tesFaltanAhorros ? ' ✗' : ' ✓') + '</strong></div>' +
+    '<div class="desglose-row"><span>Cuota máxima que aprobará el banco</span><strong>' + cuotaMaxFmt + ' €/mes</strong></div>';
 }
 
-calcular();
+// Sincronizar slider de cuota con el salario inicial
+window.addEventListener('DOMContentLoaded', function() {
+  var salario = parseFloat(document.getElementById('salario').value) || 2500;
+  var maxCuota = Math.round(salario * 0.35);
+  var slider = document.getElementById('cuota-deseada');
+  slider.value = maxCuota;
+  calcular();
+});
+
+document.getElementById('salario').addEventListener('input', function() {
+  var salario = parseFloat(this.value) || 0;
+  var maxCuota = Math.round(salario * 0.35);
+  var slider = document.getElementById('cuota-deseada');
+  slider.max = Math.max(3000, maxCuota * 2);
+  slider.value = Math.min(slider.value, maxCuota);
+  calcular();
+});
 </script>
 </body>
 </html>
