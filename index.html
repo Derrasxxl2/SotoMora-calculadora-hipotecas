@@ -295,12 +295,9 @@
   .semaforo.warning { background: var(--amber-bg); color: var(--amber); }
   .semaforo.danger { background: var(--red-bg); color: var(--red); }
 
-
-
   .contact-wrap {
     display: none;
     margin: 0 0 16px;
-    animation: fadeUp 0.35s ease both;
   }
 
   .contact-btn {
@@ -443,12 +440,6 @@
     </div>
   </div>
 
-
-
-  <div class="contact-wrap" id="contact-wrap">
-    <a class="contact-btn" href="https://wa.me/34692677688" target="_blank" rel="noopener noreferrer">Contáctanos</a>
-  </div>
-
   <div class="effort-wrap">
     <div class="effort-header">
       <span>Esfuerzo mensual sobre salario</span>
@@ -519,10 +510,23 @@ function calcular() {
   var precioMax = hipoteca + ahorrosUtiles;
   var pct = salario > 0 ? (cuotaReal / salario * 100) : 0;
 
+  // Botón de contacto: se crea automáticamente aunque no exista en el HTML.
+  // No toca la lógica matemática: usa el precioMax ya calculado con hipoteca + ahorrosUtiles.
   var contactWrap = document.getElementById('contact-wrap');
-  if (contactWrap) {
-    contactWrap.style.display = precioMax > 500000 ? 'block' : 'none';
+  if (!contactWrap) {
+    contactWrap = document.createElement('div');
+    contactWrap.id = 'contact-wrap';
+    contactWrap.className = 'contact-wrap';
+    contactWrap.innerHTML = '<a class="contact-btn" href="https://wa.me/34692677688" target="_blank" rel="noopener noreferrer">Contáctanos</a>';
+
+    var resultsBlock = document.querySelector('.results');
+    if (resultsBlock && resultsBlock.parentNode) {
+      resultsBlock.insertAdjacentElement('afterend', contactWrap);
+    }
   }
+
+  contactWrap.style.display = precioMax > 500000 ? 'block' : 'none';
+
 
   // Actualizar slider label
   document.getElementById('cuota-deseada-out').textContent = Math.round(cuotaDeseada).toLocaleString('es-ES') + ' €/mes';
