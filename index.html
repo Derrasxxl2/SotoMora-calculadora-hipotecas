@@ -295,6 +295,35 @@
   .semaforo.warning { background: var(--amber-bg); color: var(--amber); }
   .semaforo.danger { background: var(--red-bg); color: var(--red); }
 
+
+
+  .contact-wrap {
+    display: none;
+    margin: 0 0 16px;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  .contact-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 0.95rem 1rem;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #FFFFFF;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+
+  .contact-btn:hover {
+    background: var(--accent-dark);
+    transform: translateY(-1px);
+  }
+
   .desglose {
     font-size: 13px;
     color: var(--muted);
@@ -335,33 +364,6 @@
     .results { grid-template-columns: 1fr; }
     .card { padding: 1.25rem; }
   }
-
-  .contact-wrap {
-    display: none;
-    margin-top: 16px;
-    text-align: center;
-  }
-
-  .contact-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 0.95rem 1.25rem;
-    border-radius: 999px;
-    background: var(--accent);
-    color: #fff;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 15px;
-    transition: transform 0.15s ease, background 0.2s ease;
-  }
-
-  .contact-btn:hover {
-    background: var(--accent-dark);
-    transform: translateY(-1px);
-  }
-
 </style>
 </head>
 <body>
@@ -441,6 +443,12 @@
     </div>
   </div>
 
+
+
+  <div class="contact-wrap" id="contact-wrap">
+    <a class="contact-btn" href="https://wa.me/34692677688" target="_blank" rel="noopener noreferrer">Contáctanos</a>
+  </div>
+
   <div class="effort-wrap">
     <div class="effort-header">
       <span>Esfuerzo mensual sobre salario</span>
@@ -453,10 +461,6 @@
   </div>
 
   <div class="desglose" id="desglose"></div>
-
-  <div class="contact-wrap" id="contact-wrap">
-    <a class="contact-btn" href="https://wa.me/34692677688" target="_blank" rel="noopener">Contáctanos</a>
-  </div>
 
 </div>
 
@@ -515,18 +519,17 @@ function calcular() {
   var precioMax = hipoteca + ahorrosUtiles;
   var pct = salario > 0 ? (cuotaReal / salario * 100) : 0;
 
+  var contactWrap = document.getElementById('contact-wrap');
+  if (contactWrap) {
+    contactWrap.style.display = precioMax > 500000 ? 'block' : 'none';
+  }
+
   // Actualizar slider label
   document.getElementById('cuota-deseada-out').textContent = Math.round(cuotaDeseada).toLocaleString('es-ES') + ' €/mes';
   document.getElementById('precio-max').textContent = fmt(precioMax);
   document.getElementById('hipoteca').textContent = fmt(hipoteca);
   document.getElementById('cuota').textContent = Math.round(cuotaReal).toLocaleString('es-ES') + ' €/mes';
   document.getElementById('pct-label').textContent = Math.round(pct) + '%';
-
-
-  var contactWrap = document.getElementById('contact-wrap');
-  if (contactWrap) {
-    contactWrap.style.display = precioMax > 500000 ? 'block' : 'none';
-  }
 
   var barra = document.getElementById('barra');
   barra.style.width = Math.min(pct, 100) + '%';
@@ -596,4 +599,3 @@ document.getElementById('salario').addEventListener('input', function() {
 </script>
 </body>
 </html>
-
