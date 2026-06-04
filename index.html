@@ -296,7 +296,7 @@
   .semaforo.danger { background: var(--red-bg); color: var(--red); }
 
   .contact-wrap {
-    display: none;
+    display: block;
     margin: 0 0 16px;
   }
 
@@ -440,6 +440,10 @@
     </div>
   </div>
 
+  <div id="contact-wrap" class="contact-wrap">
+    <a class="contact-btn" href="https://wa.me/34692677688" target="_blank" rel="noopener noreferrer">Contáctanos</a>
+  </div>
+
   <div class="effort-wrap">
     <div class="effort-header">
       <span>Esfuerzo mensual sobre salario</span>
@@ -510,22 +514,11 @@ function calcular() {
   var precioMax = hipoteca + ahorrosUtiles;
   var pct = salario > 0 ? (cuotaReal / salario * 100) : 0;
 
-  // Botón de contacto: se crea automáticamente aunque no exista en el HTML.
-  // No toca la lógica matemática: usa el precioMax ya calculado con hipoteca + ahorrosUtiles.
+  // Botón de contacto siempre visible. No toca la lógica matemática.
   var contactWrap = document.getElementById('contact-wrap');
-  if (!contactWrap) {
-    contactWrap = document.createElement('div');
-    contactWrap.id = 'contact-wrap';
-    contactWrap.className = 'contact-wrap';
-    contactWrap.innerHTML = '<a class="contact-btn" href="https://wa.me/34692677688" target="_blank" rel="noopener noreferrer">Contáctanos</a>';
-
-    var resultsBlock = document.querySelector('.results');
-    if (resultsBlock && resultsBlock.parentNode) {
-      resultsBlock.insertAdjacentElement('afterend', contactWrap);
-    }
+  if (contactWrap) {
+    contactWrap.style.display = 'block';
   }
-
-  contactWrap.style.display = precioMax > 500000 ? 'block' : 'none';
 
 
   // Actualizar slider label
